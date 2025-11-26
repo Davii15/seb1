@@ -1,43 +1,38 @@
 @echo off
 title KNEC Secure Exam Launcher
 
-rem === Step 1: Create temp folder ===
-set TEMPDIR=%temp%\seb_exam_temp
-if not exist "%TEMPDIR%" mkdir "%TEMPDIR%"
+rem === Step 1: Check banned tools ===
+echo Checking for restricted tools...
 
-rem === Step 2: Extract exam.seb to temp folder ===
-echo Preparing secure exam environment...
-copy /Y "exam.seb" "%TEMPDIR%\exam_runtime.seb" >nul
-
-rem === Step 3: Detect banned programs ===
-echo Checking system for unauthorized tools...
-
-set BLOCKLIST=Wireshark.exe tshark.exe AHK.exe AutoHotkey.exe AutoHotkey64.exe ProcessHacker.exe Fiddler.exe
+set BLOCKLIST=Wireshark tshark AutoHotkey AutoHotkey64 AHK ahk CheatEngine ProcessHacker Fiddler mitmproxy BurpSuite OllyDbg x64dbg dnSpy
 
 for %%A in (%BLOCKLIST%) do (
-    tasklist /FI "IMAGENAME eq %%A" | find /I "%%A" >nul
+    tasklist | findstr /I "%%A" >nul
     if not errorlevel 1 (
         echo.
-        echo ============================================
-        echo   WARNING: Unauthorized program detected:
-        echo        %%A
-        echo   Close it before launching the exam.
-        echo ============================================
-        echo.
-        del "%TEMPDIR%\exam_runtime.seb"
+        echo ===============================================
+        echo  ⚠️  UNAUTHORIZED PROGRAM DETECTED
+        echo       Tool: %%A
+        echo  Close it first before starting the exam.
+        echo ===============================================
         pause
         exit /b
     )
 )
 
-rem === Step 4: Launch SEB with the temporary exam file ===
+echo.
 echo Launching Safe Exam Browser...
-start "" "C:\Program Files\SafeExamBrowser\SebWindowsBrowser.exe" "%TEMPDIR%\exam_runtime.seb"
+start "" "C:\Program Files\SafeExamBrowser\Application\SafeExamBrowser.exe" "KNEC 5.seb"
 
-timeout /t 3 >nul
+rem === Step 2: Begin self-delete timer in background ===
+call :SELF_DELETE "%~f0" &
+exit /b
 
-rem === Step 5: Delete temporary file (student cannot copy it) ===
-del "%TEMPDIR%\exam_runtime.seb" >nul
-rmdir "%TEMPDIR%" >nul
 
-exit
+:SELF_DELETE
+rem Wait 1800 seconds (30 minutes)
+timeout /t 1800 >nul
+
+rem Delete the script
+del "%~1"
+exit /b
